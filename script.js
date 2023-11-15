@@ -2,13 +2,22 @@ const transactionsUl = document.querySelector('#transactions')
 const incomeDisplay = document.querySelector('#money-plus')
 const expenseDisplay = document.querySelector('#money-minus')
 const balanceDisplay = document.querySelector('#balance')
+const form = document.querySelector('#form')
+const inputTransactionName = document.querySelector('#text')
+const inputTransactionAmount = document.querySelector('#amount')
 
-const dummyTransactions = [
-  { id: 1, name: 'Bolo de brigadeiro', amount: -20 },
-  { id: 2, name: 'Sálario', amount: 300 },
-  { id: 3, name: 'Torta de frango', amount: -10 },
-  { id: 4, name: 'Violão', amount: 150 },
-]
+const localStorageTransactions = JSON.parse(localStorage
+  .getItem('transactions'))
+let transactions = localStorage
+  .getItem('transactions') !== null ? localStorageTransactions : []
+
+const removeTransaction = ID => {
+  transactions = transactions.filter(transaction => 
+    transaction.id !== ID)
+  console.log(transactions);
+  updateLocalStorage()
+  init()
+}
 
 const addTransactionsInToDOM = transaction => {
   const operator = transaction.amount < 0 ? '-' : '+'
@@ -18,14 +27,16 @@ const addTransactionsInToDOM = transaction => {
 
   li.classList.add(CSSClass)
   li.innerHTML = `
-    ${transaction.name} <span>${operator} R$ ${amountWithoutOperator}</span><button class="delete-btn">x</button>
+    ${transaction.name} 
+    <span>${operator} R$ ${amountWithoutOperator}</span>
+    <button class="delete-btn" onclick="removeTransaction(${transaction.id})">x</button>
   `
 
   transactionsUl.append(li)
 }
 
 const updateBalanceValues = () => {
-  const transactionsAmounts = dummyTransactions
+  const transactionsAmounts = transactions
     .map(transaction => transaction.amount)
 
   const total = transactionsAmounts
@@ -34,7 +45,7 @@ const updateBalanceValues = () => {
 
   const income = transactionsAmounts
     .filter(value => value > 0)
-    .reduce((accumulator, value) => accumulator + value)
+    .reduce((accumulator, value) => accumulator + value, 0)
     .toFixed(2)
 
   const expense = Math.abs(transactionsAmounts
@@ -48,8 +59,40 @@ const updateBalanceValues = () => {
 }
 
 const init = () => {
-  dummyTransactions.forEach(addTransactionsInToDOM)
+  transactionsUl.innerHTML = ''
+  transactions.forEach(addTransactionsInToDOM)
   updateBalanceValues()
 }
 
 init()
+
+const updateLocalStorage = () => {
+  localStorage.setItem('transactions', JSON.stringify(transactions))
+}
+
+const generateID = () => Math.round(Math.random() * 1000)
+
+form.addEventListener('submit', event => {
+  event.preventDefault()
+
+  const transactionName = inputTransactionName.value.trim()
+  const transactionAmount = inputTransactionAmount.value.trim()
+
+  if(transactionName === '' || transactionAmount === '') {
+    alert('Por favor, preencha tanto o nome quanto o valor da transação')
+    return
+  }
+
+  const transaction = {
+    id: generateID(),
+    name: transactionName,
+    amount: Number(transactionAmount),
+  }
+
+  transactions.push(transaction)
+  init()
+  updateLocalStorage()
+
+  inputTransactionName.value = ''
+  inputTransactionAmount.value = ''
+})
